@@ -1,0 +1,854 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Random Animal Explorer</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0a0e1a;
+  --bg-gradient: linear-gradient(135deg, #0a0e1a 0%, #1a1f3a 100%);
+  --card: rgba(20, 25, 43, 0.95);
+  --card-hover: rgba(30, 35, 53, 0.95);
+  --glass: rgba(255, 255, 255, 0.08);
+  --glass-border: rgba(255, 255, 255, 0.15);
+  --ink: #ffffff;
+  --muted: #a0aec0;
+  --accent: #4a9eff;
+  --accent-glow: #60a5fa;
+  --success: #10b981;
+  --error: #ef4444;
+  --warning: #f59e0b;
+  --purple: #8b5cf6;
+  --pink: #ec4899;
+  --cyan: #06b6d4;
+}
+
+/* Animations */
+@keyframes gradient-shift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+@-webkit-keyframes gradient-shift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+@-webkit-keyframes float { 0%,100%{-webkit-transform:translateY(0);transform:translateY(0)} 50%{-webkit-transform:translateY(-10px);transform:translateY(-10px)} }
+
+@keyframes pulse-glow { 0%,100%{box-shadow:0 0 20px rgba(59,130,246,.5)} 50%{box-shadow:0 0 40px rgba(59,130,246,.8)} }
+@-webkit-keyframes pulse-glow { 0%,100%{box-shadow:0 0 20px rgba(59,130,246,.5)} 50%{box-shadow:0 0 40px rgba(59,130,246,.8)} }
+
+@keyframes slide-up { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+@-webkit-keyframes slide-up { from{opacity:0;-webkit-transform:translateY(20px);transform:translateY(20px)} to{opacity:1;-webkit-transform:translateY(0);transform:translateY(0)} }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@-webkit-keyframes spin { to { -webkit-transform: rotate(360deg); transform: rotate(360deg); } }
+
+html {
+  min-height: 100vh;
+  background: #0a0e1a;
+  color-scheme: dark;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background: var(--bg-gradient);
+  background-attachment: fixed;
+  background-size: 400% 400%;
+  -webkit-animation: gradient-shift 20s ease infinite;
+  animation: gradient-shift 20s ease infinite;
+  color: var(--ink, #ffffff);
+  font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+}
+
+.stars {
+  position: fixed; inset: 0; pointer-events: none;
+  background-image:
+    radial-gradient(2px 2px at 20px 30px, white, transparent),
+    radial-gradient(2px 2px at 40px 70px, white, transparent),
+    radial-gradient(1px 1px at 50px 50px, white, transparent),
+    radial-gradient(1px 1px at 80px 10px, white, transparent),
+    radial-gradient(2px 2px at 130px 80px, white, transparent);
+  background-repeat: repeat;
+  background-size: 200px 200px;
+  opacity: .3;
+  -webkit-animation: float 20s ease-in-out infinite;
+  animation: float 20s ease-in-out infinite;
+}
+
+.container {
+  position: relative;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  z-index: 1;
+  flex: 1;
+}
+
+.header { text-align: center; margin-bottom: 3rem; -webkit-animation: slide-up .6s ease-out; animation: slide-up .6s ease-out; }
+
+.title {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--accent-glow,#60a5fa) 0%, var(--purple,#8b5cf6) 50%, var(--pink,#ec4899) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  /* Fallback if text clipping isn’t available */
+  color: var(--accent-glow, #60a5fa);
+  margin-bottom: .5rem;
+  letter-spacing: -1px;
+}
+
+@supports not (-webkit-background-clip: text) {
+  .title { background: none; color: var(--accent-glow, #60a5fa); }
+}
+
+.subtitle { color: var(--accent-glow,#60a5fa); font-size: 1.1rem; font-weight: 400; opacity: .9; }
+
+.filters {
+  display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; margin-bottom: 2rem;
+  -webkit-animation: slide-up .7s ease-out; animation: slide-up .7s ease-out;
+}
+
+.filter-group {
+  background: rgba(30,35,53,.8);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border, rgba(255,255,255,.15));
+  border-radius: 16px;
+  padding: 1rem;
+  display: flex; flex-wrap: wrap; gap: .5rem;
+}
+@supports not (backdrop-filter: blur(10px)) { .filter-group { background: rgba(30,35,53,.95); } }
+
+.filter-label {
+  color: var(--accent-glow,#60a5fa);
+  font-size: .85rem; text-transform: uppercase; letter-spacing: 1px;
+  width: 100%; margin-bottom: .5rem; font-weight: 600;
+}
+
+/* Base button normalization + layout so gradients/rounded corners show consistently */
+button { font: inherit; color: inherit; }
+.btn, .filter-btn {
+  -webkit-appearance: none;
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: .6rem;
+  line-height: 1;
+  vertical-align: middle;
+  text-decoration: none;
+}
+
+.filter-btn {
+  background: rgba(255,255,255,.1);
+  color: var(--ink,#fff);
+  border: 1px solid var(--glass-border, rgba(255,255,255,.15));
+  border-radius: 12px; padding: .5rem 1rem; font-size: .9rem; cursor: pointer;
+  transition: all .3s ease; position: relative; overflow: hidden;
+}
+.filter-btn::before {
+  content: "";
+  position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.2), transparent);
+  transition: left .5s;
+}
+.filter-btn:hover::before { left: 100%; }
+.filter-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(59,130,246,.3); background: rgba(255,255,255,.15); }
+.filter-btn.active {
+  background: linear-gradient(135deg, var(--accent,#4a9eff), var(--purple,#8b5cf6));
+  color: #fff; border-color: transparent; -webkit-animation: pulse-glow 2s ease-in-out infinite; animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.main-controls { display:flex; justify-content:center; gap:1rem; margin-bottom:2rem; flex-wrap:wrap; -webkit-animation:slide-up .8s ease-out; animation:slide-up .8s ease-out; }
+
+.btn {
+  background: linear-gradient(135deg, var(--accent,#4a9eff), var(--accent-glow,#60a5fa));
+  color:#fff; border:none; border-radius:14px; padding:1rem 2rem; font-size:1rem; font-weight:600; cursor:pointer;
+  transition: all .3s ease; position:relative; overflow:hidden; box-shadow:0 4px 15px rgba(59,130,246,.4);
+}
+.btn::after {
+  content:""; position:absolute; top:50%; left:50%; width:0; height:0; border-radius:50%;
+  background: rgba(255,255,255,.3); transform: translate(-50%,-50%); transition: width .6s, height .6s;
+}
+.btn:active::after { width:300px; height:300px; }
+.btn:hover { transform: translateY(-3px); box-shadow:0 8px 25px rgba(59,130,246,.6); }
+
+.btn.secondary {
+  background: rgba(255,255,255,.1);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border, rgba(255,255,255,.15));
+  box-shadow: 0 4px 15px rgba(0,0,0,.1);
+  color: var(--ink,#fff);
+}
+@supports not (backdrop-filter: blur(10px)) { .btn.secondary { background: rgba(40,45,65,.95); } }
+.btn.secondary:hover { background: rgba(255,255,255,.15); box-shadow: 0 8px 25px rgba(255,255,255,.1); }
+.btn:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+
+.btn:focus-visible,
+.filter-btn:focus-visible {
+  outline: 2px solid var(--accent,#4a9eff);
+  outline-offset: 2px;
+}
+
+.card {
+  background: rgba(20,25,43,.95);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border, rgba(255,255,255,.15));
+  border-radius: 24px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,.3);
+  -webkit-animation: slide-up .9s ease-out; animation: slide-up .9s ease-out;
+  transition: transform .3s ease;
+}
+@supports not (backdrop-filter: blur(20px)) { .card { background: rgba(20,25,43,.98); } }
+.card:hover { transform: translateY(-5px); }
+
+.animal-header {
+  padding: 2rem;
+  background: linear-gradient(135deg, rgba(59,130,246,.15), rgba(139,92,246,.15));
+  border-bottom: 1px solid var(--glass-border, rgba(255,255,255,.15));
+}
+
+.animal-name {
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+  font-weight: 800; margin-bottom: .5rem;
+  background: linear-gradient(135deg, var(--ink,#fff), var(--accent-glow,#60a5fa));
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  color: var(--ink,#fff); /* fallback */
+}
+@supports not (-webkit-background-clip: text) { .animal-name { background: none; color: var(--ink,#fff); } }
+
+.scientific-name { color: var(--accent-glow,#60a5fa); font-style: italic; font-size: 1.1rem; margin-bottom: 1rem; opacity: .9; }
+
+.tags { display:flex; gap:.5rem; flex-wrap:wrap; }
+.tag {
+  background: rgba(96,165,250,.2);
+  color: var(--accent-glow,#60a5fa);
+  padding: .3rem .8rem; border-radius: 20px; font-size: .85rem;
+  border: 1px solid rgba(96,165,250,.3);
+}
+
+.animal-content { padding: 2rem; }
+.description { color: var(--ink,#fff); font-size: 1.1rem; line-height: 1.8; margin-bottom: 1.5rem; }
+
+.image-container {
+  position: relative;
+  background: linear-gradient(135deg, #1a1f3a, #0a0e1a);
+  min-height: 300px;
+  display:flex; align-items:center; justify-content:center; overflow:hidden;
+}
+.image-container img {
+  width: 100%; height: auto; max-height: 600px; object-fit: contain; opacity: 0;
+  -webkit-animation: fade-in .6s ease-out forwards; animation: fade-in .6s ease-out forwards;
+}
+@keyframes fade-in { to { opacity: 1; } }
+@-webkit-keyframes fade-in { to { opacity: 1; } }
+
+.image-loader {
+  position: absolute; width: 60px; height: 60px;
+  border: 3px solid var(--glass-border, rgba(255,255,255,.15));
+  border-top-color: var(--accent,#4a9eff);
+  border-radius: 50%;
+  -webkit-animation: spin 1s linear infinite; animation: spin 1s linear infinite;
+}
+
+.links { display:flex; gap:1rem; flex-wrap:wrap; }
+.link {
+  color: var(--accent-glow,#60a5fa); text-decoration:none; padding:.5rem 1rem;
+  background: rgba(255,255,255,.1); border-radius:10px;
+  border:1px solid var(--glass-border, rgba(255,255,255,.15));
+  transition: all .3s ease; display:inline-flex; align-items:center; gap:.5rem;
+}
+.link:hover { background: rgba(59,130,246,.2); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(59,130,246,.3); }
+
+.status { text-align:center; padding:3rem 2rem; color: var(--ink,#fff); font-size:1.1rem; }
+.status-spinner {
+  display:inline-block; width:1.2em; height:1.2em;
+  border:2px solid var(--glass-border, rgba(255,255,255,.15));
+  border-top-color: var(--accent,#4a9eff); border-radius:50%;
+  -webkit-animation: spin .8s linear infinite; animation: spin .8s linear infinite;
+  margin-right:.8rem; vertical-align: middle;
+}
+
+.alert {
+  background: linear-gradient(135deg, rgba(239,68,68,.1), rgba(239,68,68,.05));
+  border: 1px solid rgba(239,68,68,.3);
+  color: #fca5a5; padding: 1rem 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;
+  -webkit-animation: slide-up .4s ease-out; animation: slide-up .4s ease-out;
+}
+.alert.success {
+  background: linear-gradient(135deg, rgba(16,185,129,.1), rgba(16,185,129,.05));
+  border-color: rgba(16,185,129,.3); color: #6ee7b7;
+}
+
+.history {
+  margin-top: 3rem; padding: 2rem;
+  background: var(--glass, rgba(255,255,255,.08));
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border, rgba(255,255,255,.15)); border-radius: 16px;
+}
+@supports not (backdrop-filter: blur(10px)) { .history { background: rgba(30,35,53,.95); } }
+
+.history-title { color: var(--accent-glow,#60a5fa); font-size:.9rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:1rem; }
+.history-items { display:flex; gap:.8rem; flex-wrap:wrap; }
+.history-item {
+  background: rgba(30,35,53,.9); color: var(--ink,#fff); padding:.4rem 1rem; border-radius:20px; font-size:.9rem; cursor:pointer; transition: all .3s ease;
+  border:1px solid var(--glass-border, rgba(255,255,255,.15));
+}
+.history-item:hover { background: rgba(59,130,246,.2); transform: translateY(-2px); }
+
+.credit {
+  text-align: center; color: var(--accent-glow,#60a5fa); font-size:.85rem; padding:1rem;
+  border-top:1px solid var(--glass-border, rgba(255,255,255,.15)); opacity:.8;
+}
+
+.footer {
+  background: rgba(10,14,26,.95);
+  border-top: 1px solid var(--glass-border, rgba(255,255,255,.15));
+  padding: 1.5rem;
+  text-align: center;
+  margin-top: auto;
+}
+
+.footer-content {
+  color: var(--accent-glow,#60a5fa);
+  font-size: 1rem;
+  font-weight: 500;
+  opacity: .9;
+}
+
+.footer-content span {
+  background: linear-gradient(135deg, var(--accent-glow,#60a5fa), var(--purple,#8b5cf6));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 700;
+}
+
+.hidden { display: none !important; }
+
+@media (max-width: 768px) {
+  .container { padding: 1rem; }
+  .filter-group { width: 100%; }
+  .btn { padding: .8rem 1.5rem; font-size: .95rem; }
+}
+</style>
+</head>
+<body>
+<div class="stars"></div>
+<div class="container">
+  <header class="header">
+    <h1 class="title">🦁 Animal Explorer</h1>
+    <p class="subtitle">Discover amazing creatures from around the world</p>
+  </header>
+
+  <div id="alertBox" class="alert hidden"></div>
+
+  <div class="filters">
+    <div class="filter-group">
+      <div class="filter-label">Animal Type</div>
+      <button class="filter-btn active" data-filter="all">🌍 All Animals</button>
+      <button class="filter-btn" data-filter="mammals">🦘 Mammals</button>
+      <button class="filter-btn" data-filter="birds">🦅 Birds</button>
+      <button class="filter-btn" data-filter="fish">🐠 Fish</button>
+      <button class="filter-btn" data-filter="reptiles">🦎 Reptiles</button>
+      <button class="filter-btn" data-filter="amphibians">🐸 Amphibians</button>
+      <button class="filter-btn" data-filter="insects">🦋 Insects</button>
+      <button class="filter-btn" data-filter="marine">🦑 Marine Life</button>
+    </div>
+  </div>
+
+  <div class="main-controls">
+    <button id="exploreBtn" class="btn"><span>🎲</span> Explore Random Animal</button>
+    <button id="copyBtn" class="btn secondary"><span>📋</span> Copy Name</button>
+    <button id="downloadBtn" class="btn secondary"><span>💾</span> Download Image</button>
+    <button id="speakBtn" class="btn secondary"><span>🔊</span> Speak Name</button>
+    <button id="favBtn" class="btn secondary"><span>⭐</span> Favorite</button>
+  </div>
+
+  <div class="card">
+    <div id="statusView" class="status">
+      <p>Ready to explore! Choose your filters and click the button above.</p>
+    </div>
+
+    <div id="animalView" class="hidden">
+      <div class="animal-header">
+        <h2 id="animalName" class="animal-name"></h2>
+        <div id="sciName" class="scientific-name hidden"></div>
+        <div id="animalTags" class="tags"></div>
+      </div>
+
+      <div class="image-container">
+        <div id="imageLoader" class="image-loader hidden"></div>
+        <img id="animalImage" alt="" />
+      </div>
+
+      <div class="animal-content">
+        <p id="animalDesc" class="description"></p>
+        <div id="animalLinks" class="links"></div>
+      </div>
+
+      <div class="credit">
+        Data & images from Wikipedia, Wikidata & Wikimedia Commons
+      </div>
+    </div>
+  </div>
+
+  <div id="historySection" class="history hidden">
+    <div class="history-title">Recent Discoveries</div>
+    <div id="historyItems" class="history-items"></div>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="footer-content">
+    Created by <span>Simon Padron</span> © 2025
+  </div>
+</footer>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Configuration
+  const ANIMAL_FILTERS = {
+    all: [
+      'Category:Domesticated_animals','Category:Zoo_animals','Category:Pets',
+      'Category:Livestock','Category:Endangered_animals','Category:Extinct_animals',
+      'Category:Animals_described_in_1758','Category:Animals_described_in_1766',
+      'Category:Animals_described_in_1783','Category:Animals_described_in_1789',
+      'Category:Animals_described_in_1800','Category:Animals_described_in_1815',
+      'Category:Animals_described_in_1825','Category:Animals_described_in_1835',
+      'Category:Animals_described_in_1850','Category:Animals_described_in_1875',
+      'Category:Animals_described_in_1900','Category:Animals_described_in_1950',
+      'Category:Fauna_of_Africa','Category:Fauna_of_Asia','Category:Fauna_of_Europe',
+      'Category:Fauna_of_North_America','Category:Fauna_of_South_America',
+      'Category:Fauna_of_Australia','Category:Arctic_animals'
+    ],
+    mammals: [
+      'Category:Cats','Category:Dogs','Category:Bears','Category:Primates','Category:Rodents',
+      'Category:Marsupials','Category:Elephants','Category:Cetaceans','Category:Pinnipeds',
+      'Category:Bats','Category:Canids','Category:Felids','Category:Bovines','Category:Equines',
+      'Category:Deer','Category:Antelopes','Category:Rabbits','Category:Hares','Category:Pigs',
+      'Category:Hippos','Category:Rhinoceroses','Category:Giraffes','Category:Camels',
+      'Category:Kangaroos','Category:Koalas','Category:Wombats','Category:Possums','Category:Otters',
+      'Category:Badgers','Category:Weasels','Category:Hyenas','Category:Mongooses'
+    ],
+    birds: [
+      'Category:Parrots','Category:Eagles','Category:Owls','Category:Penguins','Category:Ducks',
+      'Category:Chickens','Category:Pigeons','Category:Songbirds','Category:Flamingos','Category:Herons',
+      'Category:Hawks','Category:Falcons','Category:Vultures','Category:Pelicans','Category:Storks',
+      'Category:Cranes','Category:Swans','Category:Geese','Category:Crows','Category:Ravens',
+      'Category:Finches','Category:Sparrows','Category:Robins','Category:Cardinals','Category:Jays',
+      'Category:Woodpeckers','Category:Hummingbirds','Category:Kingfishers','Category:Albatrosses',
+      'Category:Gulls','Category:Terns','Category:Puffins','Category:Toucans','Category:Hornbills'
+    ],
+    fish: [
+      'Category:Aquarium_fish','Category:Sharks','Category:Rays_(fish)','Category:Goldfish',
+      'Category:Salmon','Category:Tuna','Category:Tropical_fish','Category:Carp','Category:Catfish',
+      'Category:Bass_(fish)','Category:Trout','Category:Cod','Category:Herring','Category:Mackerel',
+      'Category:Swordfish','Category:Marlin','Category:Barracuda','Category:Eels','Category:Pufferfish',
+      'Category:Angelfish','Category:Butterflyfish','Category:Clownfish','Category:Damselfish',
+      'Category:Groupers','Category:Snappers','Category:Wrasses','Category:Gobies','Category:Blennies'
+    ],
+    reptiles: [
+      'Category:Snakes','Category:Lizards','Category:Turtles','Category:Crocodilians','Category:Geckos',
+      'Category:Iguanas','Category:Pythons','Category:Cobras','Category:Sea_turtles','Category:Tortoises',
+      'Category:Vipers','Category:Boas','Category:Colubrids','Category:Monitors','Category:Skinks',
+      'Category:Chameleons','Category:Agamas','Category:Anoles','Category:Alligators','Category:Caimans',
+      'Category:Gharials','Category:Tuataras','Category:Amphisbaenians'
+    ],
+    amphibians: [
+      'Category:Frogs','Category:Toads','Category:Salamanders','Category:Newts','Category:Tree_frogs',
+      'Category:Poison_dart_frogs','Category:Caecilians','Category:Glass_frogs','Category:Bullfrogs',
+      'Category:Rain_frogs','Category:Axolotls','Category:Sirens_(amphibians)','Category:Mudpuppies'
+    ],
+    insects: [
+      'Category:Butterflies','Category:Moths','Category:Beetles','Category:Ants','Category:Bees',
+      'Category:Wasps','Category:Dragonflies','Category:Grasshoppers','Category:Flies','Category:Mosquitoes',
+      'Category:Crickets','Category:Termites','Category:Aphids','Category:Cicadas','Category:Mantises',
+      'Category:Stick_insects','Category:Cockroaches','Category:Fleas','Category:Lice','Category:Fireflies',
+      'Category:Ladybugs','Category:Scarabs','Category:Weevils','Category:Katydids'
+    ],
+    marine: [
+      'Category:Dolphins','Category:Whales','Category:Octopuses','Category:Squid','Category:Jellyfish',
+      'Category:Sea_anemones','Category:Corals','Category:Starfish','Category:Sea_urchins','Category:Seahorses',
+      'Category:Seals','Category:Sea_lions','Category:Walruses','Category:Manatees','Category:Dugongs',
+      'Category:Sea_otters','Category:Crabs','Category:Lobsters','Category:Shrimp','Category:Barnacles',
+      'Category:Mussels','Category:Clams','Category:Oysters','Category:Scallops','Category:Nautiluses',
+      'Category:Cuttlefish','Category:Sea_slugs','Category:Sea_cucumbers','Category:Sea_spiders'
+    ]
+  };
+
+  // State
+  let currentFilter = 'all';
+  let currentAnimal = null;
+  let animalHistory = [];
+  let favorites = [];
+
+  try {
+    const saved = localStorage.getItem('animalFavorites');
+    if (saved) favorites = JSON.parse(saved);
+  } catch(e){}
+
+  // DOM
+  const exploreBtn = document.getElementById('exploreBtn');
+  const copyBtn = document.getElementById('copyBtn');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const speakBtn = document.getElementById('speakBtn');
+  const favBtn = document.getElementById('favBtn');
+  const alertBox = document.getElementById('alertBox');
+  const statusView = document.getElementById('statusView');
+  const animalView = document.getElementById('animalView');
+  const animalName = document.getElementById('animalName');
+  const sciName = document.getElementById('sciName');
+  const animalTags = document.getElementById('animalTags');
+  const animalImage = document.getElementById('animalImage');
+  const imageLoader = document.getElementById('imageLoader');
+  const animalDesc = document.getElementById('animalDesc');
+  const animalLinks = document.getElementById('animalLinks');
+  const historySection = document.getElementById('historySection');
+  const historyItems = document.getElementById('historyItems');
+
+  // Filters
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+    });
+  });
+
+  // Utils
+  function showAlert(msg, type='error'){
+    alertBox.textContent = msg;
+    alertBox.className = `alert ${type === 'success' ? 'success' : ''}`;
+    alertBox.classList.remove('hidden');
+    setTimeout(() => alertBox.classList.add('hidden'), 5000);
+  }
+
+  function setStatus(msg, loading=false){
+    statusView.innerHTML = loading ? `<span class="status-spinner"></span>${msg}` : `<p>${msg}</p>`;
+    statusView.classList.remove('hidden');
+    animalView.classList.add('hidden');
+  }
+
+  async function fetchWithTimeout(url, opts={}, timeout=10000){
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeout);
+    try { return await fetch(url, { ...opts, signal: controller.signal, mode: 'cors' }); }
+    finally { clearTimeout(timer); }
+  }
+
+  // Wikipedia helpers
+  async function fetchCategoryBatch(){
+    const categories = ANIMAL_FILTERS[currentFilter];
+    const category = categories[Math.floor(Math.random()*categories.length)];
+    const url = 'https://en.wikipedia.org/w/api.php?' + new URLSearchParams({
+      action:'query', format:'json', origin:'*', prop:'pageimages|pageprops|info', inprop:'url',
+      piprop:'original|thumbnail', pithumbsize:'1600', generator:'categorymembers',
+      gcmtitle: category, gcmtype:'page', gcmlimit:'500'
+    });
+    const res = await fetchWithTimeout(url);
+    if (!res.ok) throw new Error('Wikipedia API error');
+    const data = await res.json();
+    const pages = Object.values(data?.query?.pages || {});
+    const withImages = pages.filter(p => p?.title && (p.original?.source || p.thumbnail?.source));
+    const withoutImages = pages.filter(p => p?.title && !p.original?.source && !p.thumbnail?.source);
+    return [...withImages, ...withoutImages];
+  }
+
+  async function fetchWikiSummary(title){
+    const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
+    const res = await fetchWithTimeout(url);
+    if (!res.ok) return { extract:'', originalImage:null };
+    const data = await res.json();
+    return { extract: data.extract || '', originalImage: data.originalimage?.source || null };
+  }
+
+  async function fetchPageDetails(title) {
+    const url = 'https://en.wikipedia.org/w/api.php?' + new URLSearchParams({
+      action: 'query',
+      format: 'json',
+      origin: '*',
+      prop: 'pageimages|pageprops|info',
+      inprop: 'url',
+      piprop: 'original|thumbnail',
+      pithumbsize: '1600',
+      titles: title
+    });
+    const res = await fetchWithTimeout(url);
+    if (!res.ok) throw new Error('Failed to fetch page details');
+    const data = await res.json();
+    const pages = Object.values(data?.query?.pages || {});
+    return pages[0];
+  }
+
+  async function fetchWikidataEntity(qid){
+    const url = `https://www.wikidata.org/wiki/Special:EntityData/${qid}.json`;
+    const res = await fetchWithTimeout(url);
+    if (!res.ok) throw new Error('Wikidata error');
+    const data = await res.json();
+    return data?.entities?.[qid];
+  }
+
+  function extractAnimalName(entity, pageTitle){
+    // First try common names
+    const commonNames = entity?.claims?.P1843;
+    if (commonNames){
+      const english = commonNames.find(n => n?.mainsnak?.datavalue?.value?.language === 'en');
+      if (english) {
+        const name = english.mainsnak.datavalue.value.text;
+        if (!isHighLevelTaxon(name)) return name;
+      }
+    }
+    // Then try label
+    const label = entity?.labels?.en?.value;
+    if (label && !isHighLevelTaxon(label)) return label;
+
+    // Try scientific name if it looks like a species
+    const sci = entity?.claims?.P225?.[0]?.mainsnak?.datavalue?.value;
+    if (sci && sci.split(' ').length >= 2) return sci;
+
+    // Use page title if it looks valid
+    if (pageTitle && !isHighLevelTaxon(pageTitle)) return pageTitle;
+
+    return null;
+  }
+
+  function isHighLevelTaxon(name) {
+    const excludedTerms = [
+      'Insecta','Mammalia','Aves','Reptilia','Amphibia','Actinopterygii','Chondrichthyes',
+      'Arachnida','Crustacea','Mollusca','Arthropoda','Chordata','Vertebrata',
+      'List of','Category:','Order ','Family ','Genus ','Class ','Phylum ','Kingdom ',
+      'Suborder ','Subfamily ','Superorder','Superfamily','Infraorder','Subclass',
+      'Clade','Group','Division','Tribe','Section','Series','Ungulates','Primates',
+      'Rodents','Carnivora','Cetacea','Pinnipeds','Marsupials','Monotremes'
+    ];
+    return excludedTerms.some(term => name.includes(term) || name === term);
+  }
+
+  async function discoverAnimal(){
+    for (let attempt=0; attempt<10; attempt++){
+      let batch;
+      try { batch = await fetchCategoryBatch(); if (!batch?.length) continue; }
+      catch(e){ continue; }
+
+      const shuffled = [...batch].sort(() => Math.random() - 0.5);
+
+      for (let i=0; i<Math.min(100, shuffled.length); i++){
+        const page = shuffled[i];
+        if (!page?.title) continue;
+
+        // Enhanced filtering for high-level taxonomic groups
+        if (isHighLevelTaxon(page.title)) continue;
+        if (page.title.includes('disambiguation')) continue;
+
+        const qid = page.pageprops?.wikibase_item;
+
+        if (!qid){
+          if (page.title && (page.original?.source || page.thumbnail?.source)){
+            const summary = await fetchWikiSummary(page.title);
+            const genericPatterns = /is a (genus|family|order|class|phylum|clade|group|tribe|subfamily|suborder) of|are a (group|clade|family)|belongs to the (family|order|class)/i;
+            if (summary.extract && summary.extract.length > 50 && !genericPatterns.test(summary.extract)){
+              return {
+                name: page.title, scientific:'', description: summary.extract || 'No description available.',
+                image: page.original?.source || page.thumbnail?.source || summary.originalImage,
+                wikipediaUrl: page.fullurl || `https://en.wikipedia.org/?curid=${page.pageid}`,
+                wikidataUrl:'', commonsUrl:'', category: currentFilter
+              };
+            }
+          }
+          continue;
+        }
+
+        let entity;
+        try { entity = await fetchWikidataEntity(qid); } catch(e){ continue; }
+
+        // Check if it's a taxon
+        const isTaxon = entity?.claims?.P31?.some(c => c?.mainsnak?.datavalue?.value?.id === 'Q16521');
+        if (!isTaxon) continue;
+
+        // Get taxon rank and be more restrictive
+        const taxonRank = entity?.claims?.P105?.[0]?.mainsnak?.datavalue?.value?.id;
+        // Only accept species, subspecies, and specific animal breeds/varieties
+        const acceptableRanks = ['Q7432','Q68947','Q3238261','Q713623','Q767728','Q2083910'];
+        const highLevelRanks = ['Q37517','Q38348','Q36732','Q36602','Q35409','Q2455704','Q5867051','Q3504061','Q5868144','Q5867959','Q2136103'];
+
+        if (taxonRank && highLevelRanks.includes(taxonRank)) continue;
+
+        const name = extractAnimalName(entity, page.title);
+        if (!name || isHighLevelTaxon(name)) continue;
+
+        const scientific = entity?.claims?.P225?.[0]?.mainsnak?.datavalue?.value || '';
+        if (!scientific && !acceptableRanks.includes(taxonRank)) continue;
+
+        let imageUrl = page.original?.source || page.thumbnail?.source || '';
+        const wikimediaImage = entity?.claims?.P18?.[0]?.mainsnak?.datavalue?.value;
+        let commonsUrl = '';
+
+        if (!imageUrl && wikimediaImage){
+          const encoded = encodeURIComponent(wikimediaImage);
+          imageUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${encoded}`;
+          commonsUrl = `https://commons.wikimedia.org/wiki/File:${encoded}`;
+        } else if (wikimediaImage){
+          const encoded = encodeURIComponent(wikimediaImage);
+          commonsUrl = `https://commons.wikimedia.org/wiki/File:${encoded}`;
+        }
+
+        const summary = await fetchWikiSummary(page.title);
+        if (!imageUrl && summary.originalImage) imageUrl = summary.originalImage;
+
+        if (summary.extract){
+          const genericPatterns = /is a (genus|family|order|class|phylum|clade|group|tribe|subfamily|suborder) of|are a (group|clade|family)|belongs to the (family|order|class)/i;
+          if (genericPatterns.test(summary.extract)) continue;
+        }
+
+        return {
+          name, scientific, description: summary.extract || 'No description available.', image: imageUrl,
+          wikipediaUrl: page.fullurl || `https://en.wikipedia.org/?curid=${page.pageid}`,
+          wikidataUrl: `https://www.wikidata.org/wiki/${qid}`,
+          commonsUrl, category: currentFilter
+        };
+      }
+    }
+    throw new Error('Could not find a suitable animal. Please try again!');
+  }
+
+  function displayAnimal(animal){
+    currentAnimal = animal;
+    animalName.textContent = animal.name;
+    document.title = `${animal.name} - Animal Explorer`;
+
+    if (animal.scientific && animal.scientific.toLowerCase() !== animal.name.toLowerCase()){
+      sciName.textContent = `Scientific name: ${animal.scientific}`;
+      sciName.classList.remove('hidden');
+    } else { sciName.classList.add('hidden'); }
+
+    const emojis = { mammals:'🦘', birds:'🦅', fish:'🐠', reptiles:'🦎', amphibians:'🐸', insects:'🦋', marine:'🦑', all:'🌍' };
+    animalTags.innerHTML = `<span class="tag">${emojis[animal.category]} ${animal.category}</span>`;
+
+    animalDesc.textContent = animal.description;
+
+    if (animal.image){
+      imageLoader.classList.remove('hidden');
+      animalImage.classList.add('hidden');
+      animalImage.src = animal.image;
+      animalImage.alt = `${animal.name} - image`;
+      animalImage.onload = () => { imageLoader.classList.add('hidden'); animalImage.classList.remove('hidden'); };
+    } else {
+      imageLoader.classList.add('hidden'); animalImage.classList.add('hidden');
+    }
+
+    const links = [];
+    if (animal.wikipediaUrl) links.push(`<a href="${animal.wikipediaUrl}" target="_blank" rel="noopener" class="link">📖 Wikipedia</a>`);
+    if (animal.wikidataUrl)  links.push(`<a href="${animal.wikidataUrl}" target="_blank" rel="noopener" class="link">📊 Wikidata</a>`);
+    if (animal.commonsUrl)   links.push(`<a href="${animal.commonsUrl}" target="_blank" rel="noopener" class="link">🖼️ Commons</a>`);
+    animalLinks.innerHTML = links.join('');
+
+    updateFavoriteButton();
+
+    statusView.classList.add('hidden');
+    animalView.classList.remove('hidden');
+
+    addToHistory(animal.name);
+  }
+
+  function addToHistory(name){
+    if (!animalHistory.includes(name)){
+      animalHistory.unshift(name);
+      if (animalHistory.length > 10) animalHistory.pop();
+      updateHistoryDisplay();
+    }
+  }
+
+  function updateHistoryDisplay(){
+    if (!animalHistory.length){ historySection.classList.add('hidden'); return; }
+    historySection.classList.remove('hidden');
+    historyItems.innerHTML = animalHistory.map(name => `<span class="history-item">${name}</span>`).join('');
+  }
+
+  function updateFavoriteButton(){
+    if (currentAnimal && favorites.includes(currentAnimal.name)){
+      favBtn.innerHTML = '<span>⭐</span> Favorited';
+      favBtn.style.background = 'linear-gradient(135deg, #f59e0b, #fbbf24)';
+    } else {
+      favBtn.innerHTML = '<span>⭐</span> Favorite';
+      favBtn.style.background = '';
+    }
+  }
+
+  async function downloadImage() {
+    if (!currentAnimal || !currentAnimal.image) {
+      showAlert('No image available to download');
+      return;
+    }
+    try {
+      const response = await fetch(currentAnimal.image);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${currentAnimal.name.replace(/[^a-z0-9]/gi, '_')}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      showAlert('Image downloaded!', 'success');
+    } catch (error) {
+      showAlert('Could not download image. Try right-clicking the image instead.');
+    }
+  }
+
+  // Events
+  exploreBtn.addEventListener('click', async () => {
+    exploreBtn.disabled = true;
+    setStatus('Discovering amazing creatures...', true);
+    try {
+      const animal = await discoverAnimal();
+      displayAnimal(animal);
+    } catch (e) {
+      showAlert(e.message || 'Something went wrong. Please try again!');
+      setStatus('Ready to explore! Choose your filters and click the button above.');
+    }
+    exploreBtn.disabled = false;
+  });
+
+  copyBtn.addEventListener('click', async () => {
+    if (!currentAnimal) return;
+    try {
+      await navigator.clipboard.writeText(currentAnimal.name);
+      const original = copyBtn.innerHTML;
+      copyBtn.innerHTML = '<span>✅</span> Copied!';
+      setTimeout(() => copyBtn.innerHTML = original, 1500);
+    } catch { showAlert('Could not copy to clipboard'); }
+  });
+
+  downloadBtn.addEventListener('click', downloadImage);
+
+  speakBtn.addEventListener('click', () => {
+    if (!currentAnimal) return;
+    const utterance = new SpeechSynthesisUtterance(currentAnimal.name);
+    speechSynthesis.cancel();
+    speechSynthesis.speak(utterance);
+  });
+
+  favBtn.addEventListener('click', () => {
+    if (!currentAnimal) return;
+    const idx = favorites.indexOf(currentAnimal.name);
+    if (idx > -1){ favorites.splice(idx,1); showAlert('Removed from favorites','success'); }
+    else { favorites.push(currentAnimal.name); showAlert('Added to favorites!','success'); }
+    try { localStorage.setItem('animalFavorites', JSON.stringify(favorites)); } catch(e){}
+    updateFavoriteButton();
+  });
+
+  // Init
+  updateHistoryDisplay();
+});
+</script>
+</body>
+</html>
